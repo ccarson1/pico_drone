@@ -1,0 +1,176 @@
+:root {
+            --gray: rgb(34, 48, 64);
+            --blue: rgb(0, 122, 253);
+            --green: rgb(6, 215, 108);
+            --white: rgb(253, 251, 252);
+        }
+
+body {
+    font-family: Arial, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: #58a6ff;
+    text-align: center;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.panel {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.label {
+    color: #8b949e;
+    font-size: 1.1em;
+}
+
+.value {
+    font-size: 2.4em;
+    font-weight: bold;
+    margin: 8px 0;
+}
+
+.status {
+    text-align: center;
+    font-size: 1.4em;
+    margin: 30px 0;
+}
+
+.level {
+    color: #f0e68c;
+    font-weight: bold;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+button {
+    padding: 14px 28px;
+    font-size: 1.3em;
+    background: #238636;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin: 20px auto;
+    display: block;
+}
+
+button:disabled {
+    background: #444;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel-motors {
+
+    background-color: var(--gray);
+    display: flex;
+    flex-wrap: wrap;
+    /* allows wrapping on small screens */
+    justify-content: center;
+    /* center gauges horizontally */
+    align-items: flex-start;
+    /* stick gauges to top */
+    margin: 0;
+    /* remove the 10% margin that pushes down */
+    padding: 20px;
+    /* optional padding from top and sides */
+}
+
+.gauge {
+    position: relative;
+    margin: 15px;
+    /* spacing between gauges */
+    width: 200px;
+    /* keep fixed so rotation math works */
+    height: 200px;
+    /* keep square */
+}
+
+.speed {
+    position: absolute;
+    color: var(--white);
+    margin-top: 40%;
+    font-size: x-large;
+    font-family: fantasy;
+
+
+}
+
+.meter-value {
+    position: absolute;
+    text-align: center;
+    margin-top: 80%;
+    margin-left: 47%;
+    z-index: 600;
+    color: var(--white);
+}
+
+.progress {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: .1rem solid var(--white);
+    border-bottom: .1rem solid var(--gray);
+    border-radius: 50%;
+    /* Makes the box into a circle*/
+    outline: .2rem solid var(--white);
+    outline-offset: .4rem;
+    overflow: hidden;
+
+
+}
+
+.progress::before {
+    position: absolute;
+    content: '';
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    height: 80%;
+    background-color: var(--gray);
+    border-radius: 50%;
+    z-index: 200;
+}
+
+.progress::after {
+    position: absolute;
+    content: '';
+    top: 50%;
+    width: 100%;
+    height: 50%;
+    background-color: var(--gray);
+
+
+}
+
+.bar {
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    background-color: var(--green);
+    transform: rotate(-90deg);
+    transform-origin: center right;
+}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PicoDrone Live Dashboard</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>PicoDrone Live Telemetry</h1>
+
+        <button id="connectBtn">Connect to Drone</button>
+        <div id="connectStatus" class="status">Press the button to connect</div>
+        <div class="label">Last Update</div>
+        <div class="value" id="timestamp">--:--:--</div>
+        <div class="panel-motors">
+            
+            <div>
+                <div class="gauge">
+                    <div class="progress">
+                        <div class="meter-value">
+                            <p id="speed-value-0">0</p>
+                        </div>
+
+                        <div class="bar"></div>
+                    </div>
+                </div>
+                <input type="range" min="0" max="100" value="0" class="slider" id="myRange_0">
+            </div>
+
+            <div>
+                <div class="gauge">
+                    <div class="progress">
+                        <div class="meter-value">
+                            <p id="speed-value-1">0</p>
+                        </div>
+                        <div class="bar"></div>
+                    </div>
+                </div>
+                <input type="range" min="0" max="100" value="0" class="slider" id="myRange_1">
+            </div>
+            <div>
+                <div class="gauge">
+                    <div class="progress">
+                        <div class="meter-value">
+                            <p id="speed-value-2">0</p>
+                        </div>
+
+                        <div class="bar"></div>
+                    </div>
+                </div>
+                <input type="range" min="0" max="100" value="0" class="slider" id="myRange_2">
+            </div>
+            <div>
+                <div class="gauge">
+                    <div class="progress">
+                        <div class="meter-value">
+                            <p id="speed-value-3">0</p>
+                        </div>
+
+                        <div class="bar"></div>
+                    </div>
+                </div>
+                <input type="range" min="0" max="100" value="0" class="slider" id="myRange_3">
+            </div>
+
+
+
+        </div>
+
+        <div class="speed">
+            <div class="slidecontainer">
+
+
+
+            </div>
+            <button onclick="sendControl();">Send</button>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <div class="label">Acceleration (g)</div>
+                <div>X: <span class="value" id="ax">0.000</span></div>
+                <div>Y: <span class="value" id="ay">0.000</span></div>
+                <div>Z: <span class="value" id="az">0.000</span></div>
+            </div>
+
+            <div class="panel">
+                <div class="label">Gyroscope (°/s)</div>
+                <div>X: <span class="value" id="gx">0.000</span></div>
+                <div>Y: <span class="value" id="gy">0.000</span></div>
+                <div>Z: <span class="value" id="gz">0.000</span></div>
+            </div>
+        </div>
+
+        <div class="panel status" id="level">Board status: —</div>
+    </div>
+
+    <script src="/static/app.js"></script>
+
+</body>
+
+</html>
