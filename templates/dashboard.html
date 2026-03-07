@@ -16,10 +16,25 @@
 
         <button id="connectBtn">Connect to Drone</button>
         <div id="connectStatus" class="status">Press the button to connect</div>
-        <div class="label">Last Update</div>
-        <div class="value" id="timestamp">--:--:--</div>
+        <div style="display: flex;">
+            <div style="display: flex; margin-right: 5%; align-items: center;">
+                <div class="label" style="padding-right: .8em;">Last Update</div>
+                <div class="value" id="timestamp">--:--:--</div>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div class="label" style="padding-right: .8em;">Battery Level</div>
+                <div class="value" id="battery">--%</div>
+            </div>
+
+
+
+        </div>
+
+        <div>
+            <p id="keyDisplay"></p>
+        </div>
         <div class="panel-motors">
-            
+
             <div>
                 <div class="gauge">
                     <div class="progress">
@@ -73,14 +88,6 @@
 
         </div>
 
-        <div class="speed">
-            <div class="slidecontainer">
-
-
-
-            </div>
-            <button onclick="sendControl();">Send</button>
-        </div>
 
         <div class="grid">
             <div class="panel">
@@ -101,7 +108,9 @@
         <div class="panel status" id="level">Board status: —</div>
     </div>
 
+    <script src="/static/keyhandler.js"></script>
     <script src="/static/app.js"></script>
+
 
 </body>
 

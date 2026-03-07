@@ -10,6 +10,7 @@ var slider_1 = document.getElementById("myRange_1");
 var slider_2 = document.getElementById("myRange_2");
 var slider_3 = document.getElementById("myRange_3");
 
+
 slider_0.oninput = function () {
     document.getElementById('speed-value-0').innerHTML = this.value;
     gauge_0.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
@@ -48,6 +49,8 @@ function connectWebSocket() {
         document.getElementById("gx").textContent = data.gyro.x.toFixed(3);
         document.getElementById("gy").textContent = data.gyro.y.toFixed(3);
         document.getElementById("gz").textContent = data.gyro.z.toFixed(3);
+        document.getElementById("battery").textContent = data.battery + "%";
+        console.log("Received data:", data);
 
         // Tilt direction logic
         const threshold = 0.25;

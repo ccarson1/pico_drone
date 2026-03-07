@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+<h1>Drone Controls</h1>
+<p id="keyDisplay"></p>
+
+<script>
+
+const display = document.getElementById("keyDisplay");
+
+const Input = {
+    keys: {},
+
+    init() {
+        document.addEventListener("keydown", e => this.keys[e.key] = true);
+        document.addEventListener("keyup", e => this.keys[e.key] = false);
+    },
+
+    isDown(key) {
+        return this.keys[key];
+    }
+};
+
+Input.init();
+
+function update() {
+
+    let action = "";
+
+    if (Input.isDown("w")) action = "Move forward";
+    if (Input.isDown("s")) action = "Move backward";
+    if (Input.isDown("a")) action = "Move left";
+    if (Input.isDown("d")) action = "Move right";
+
+    if (Input.isDown(" ")) action = "Move up";
+    if (Input.isDown("Shift")) action = "Move down";
+
+    if (Input.isDown("ArrowUp")) action = "Tilt down";
+    if (Input.isDown("ArrowDown")) action = "Tilt up";
+    if (Input.isDown("ArrowLeft")) action = "Tilt left";
+    if (Input.isDown("ArrowRight")) action = "Tilt right";
+
+    display.textContent = action;
+
+    requestAnimationFrame(update);
+}
+
+update();
+
+</script>
+
+</body>
+</html>

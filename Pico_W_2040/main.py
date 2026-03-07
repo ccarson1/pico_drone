@@ -3,7 +3,7 @@
 import aioble
 import asyncio
 import bluetooth
-from machine import Pin, PWM, I2C
+from machine import Pin, PWM, I2C, ADC
 import struct
 from libs.imu import MPU6050
 import time
@@ -31,10 +31,15 @@ SERVICE_UUID = bluetooth.UUID("19b10000-e8f2-537e-4f6c-d104768a1214")
 RX_UUID = bluetooth.UUID("19b10001-e8f2-537e-4f6c-d104768a1214")
 TX_UUID = bluetooth.UUID("19b10002-e8f2-537e-4f6c-d104768a1214")
 
+
 service = aioble.Service(SERVICE_UUID)
 rx_char = aioble.Characteristic(service, RX_UUID, write=True, write_no_response=True)
 tx_char = aioble.Characteristic(service, TX_UUID, read=True, notify=True)
 aioble.register_services(service)
+battery_adc = ADC(29)
+vsys_enable = Pin(25, Pin.OUT)
+vsys_enable.value(1)
+battery_samples = []
 
 def set_motor(m_a, m_b, speed):
     pass
@@ -42,10 +47,32 @@ def set_motor(m_a, m_b, speed):
 def stop_all():
     pass
 
+
+def read_battery_voltage():
+    raw = battery_adc.read_u16()
+    print("RAW ADC:", raw)
+    voltage = raw * 3.3 / 65535 * 3
+
+    battery_samples.append(voltage)
+    if len(battery_samples) > 10:
+        battery_samples.pop(0)
+
+    return sum(battery_samples) / len(battery_samples)
+
+def battery_percent(v):
+    if v >= 4.2:
+        return 100
+    if v <= 3.3:
+        return 0
+    return int((v - 3.3) / (4.2 - 3.3) * 100)
+
 async def main():
     print("BLE peripheral ready – MPU6050 streaming")
     
     while True:
+        voltage = read_battery_voltage()
+        percent = battery_percent(voltage)
+        print("Battery:", voltage, "V", percent, "%")
         try:
             async with await aioble.advertise(
                 500_000,
@@ -65,7 +92,10 @@ async def main():
                         
                         #print(f"Local read: Acc {ax:.2f} {ay:.2f} {az:.2f} | Gyro {gx:.2f} {gy:.2f} {gz:.2f}")
                         
-                        data = struct.pack("6f", ax, ay, az, gx, gy, gz)
+                        
+                        
+                        data = struct.pack("6fB", ax, ay, az, gx, gy, gz, percent)
+                        print(data)
                         
                         try:
                             await tx_char.notify(connection, data)
@@ -77,6 +107,10 @@ async def main():
                             pass
                         
                         last_notify_time = time.ticks_ms()
+                        
+                        
+
+                        
                         
                     except Exception as e:
                         print("Sensor read error:", str(e))

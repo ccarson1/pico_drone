@@ -57,13 +57,14 @@ async def connect_to_pico():
                 print("[BLE] Connected to PicoDrone!")
 
                 def notification_handler(sender, data):
+                    print(data)
                     global latest_reading
-                    if len(data) != 24:
+                    if len(data) != 25:
                         print(f"[BLE] Unexpected data length: {len(data)} bytes")
                         return
 
                     try:
-                        ax, ay, az, gx, gy, gz = struct.unpack("6f", data)
+                        ax, ay, az, gx, gy, gz, battery = struct.unpack("6fB", data)
                         timestamp = time.strftime("%H:%M:%S")
 
                         reading = {
@@ -81,6 +82,7 @@ async def connect_to_pico():
                             "level": abs(ax) < 0.15
                             and abs(ay) < 0.15
                             and 0.9 < az < 1.1,
+                            "battery": battery,
                         }
 
                         latest_reading = reading
@@ -171,7 +173,22 @@ async def dashboard(request: Request):
         {"request": request}
     )
 
+@app.websocket("/controls")
+async def controls_websocket(websocket: WebSocket):
+    await websocket.accept()
+    print("[WebSocket] Control client connected")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print(f"[WebSocket] Received control command: {data}")
+            msg = json.loads(data)
 
+            key = msg["key"]
+            state = msg["state"]
+
+            print(key, state)
+    except WebSocketDisconnect:
+        print("[WebSocket] Control client disconnected")
 
 
 @app.websocket("/ws")

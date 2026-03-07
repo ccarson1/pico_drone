@@ -108,15 +108,6 @@ button:disabled {
     /* keep square */
 }
 
-.speed {
-    position: absolute;
-    color: var(--white);
-    margin-top: 40%;
-    font-size: x-large;
-    font-family: fantasy;
-
-
-}
 
 .meter-value {
     position: absolute;
