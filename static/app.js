@@ -11,6 +11,10 @@ var slider_2 = document.getElementById("myRange_2");
 var slider_3 = document.getElementById("myRange_3");
 
 
+let pitch = 0;
+let roll = 0;
+
+
 slider_0.oninput = function () {
     document.getElementById('speed-value-0').innerHTML = this.value;
     gauge_0.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
@@ -26,6 +30,12 @@ slider_2.oninput = function () {
 slider_3.oninput = function () {
     document.getElementById('speed-value-3').innerHTML = this.value;
     gauge_3.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
+}
+
+function updateHorizon(pitch, roll) {
+    const horizon = document.getElementById("horizon");
+    // Translate vertically for pitch, rotate for roll
+    horizon.style.transform = `rotate(${roll}deg) translateY(${pitch}px)`;
 }
 
 function connectWebSocket() {
@@ -50,7 +60,16 @@ function connectWebSocket() {
         document.getElementById("gy").textContent = data.gyro.y.toFixed(3);
         document.getElementById("gz").textContent = data.gyro.z.toFixed(3);
         document.getElementById("battery").textContent = data.battery + "%";
-        console.log("Received data:", data);
+        //console.log("Received data:", data);
+
+        pitch = data.gyro.x.toFixed(3);
+        roll = data.gyro.y.toFixed(3);
+        yaw = data.gyro.z.toFixed(3);
+
+
+        updateHorizon(pitch, roll);
+
+        
 
         // Tilt direction logic
         const threshold = 0.25;
@@ -143,3 +162,11 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
 
     }
 });
+
+
+
+// Demo: oscillate pitch and roll
+
+// setInterval(() => {
+    
+// }, 60);

@@ -33,7 +33,38 @@ TX_UUID = bluetooth.UUID("19b10002-e8f2-537e-4f6c-d104768a1214")
 
 
 service = aioble.Service(SERVICE_UUID)
-rx_char = aioble.Characteristic(service, RX_UUID, write=True, write_no_response=True)
+rx_char = aioble.Characteristic(
+    service,
+    RX_UUID,
+    write=True,
+    write_no_response=True,
+    notify=False
+)
+
+async def rx_handler(characteristic, data):
+    """Handle incoming control commands from BLE (wheel/key)."""
+    if len(data) == 1:
+        # Single byte → wheel value
+        wheel_value = data[0]
+        print("Wheel command:", wheel_value)
+        # TODO: map wheel_value to motor PWM
+        # Example for front motors:
+        # set_motor(motor1a, motor1b, wheel_value)
+    else:
+        # Assume JSON payload → key press
+        try:
+            import ujson
+            msg = ujson.loads(data)
+            key = msg.get("key")
+            state = msg.get("state")
+            print(f"Key command: {key} = {state}")
+            # TODO: implement key handling (forward/back/turn)
+        except Exception as e:
+            print("Failed to parse control payload:", e)
+
+# Attach callback
+#rx_char.callback(trigger=aioble.FLAG_WRITE, handler=rx_handler)
+
 tx_char = aioble.Characteristic(service, TX_UUID, read=True, notify=True)
 aioble.register_services(service)
 battery_adc = ADC(29)
@@ -42,10 +73,14 @@ vsys_enable.value(1)
 battery_samples = []
 
 def set_motor(m_a, m_b, speed):
-    pass
+    """Speed: 0-255 (example)."""
+    duty = int(speed / 255 * 65535)
+    m_a.duty_u16(duty)
+    m_b.duty_u16(0)  # simple forward/backward logic
 
 def stop_all():
-    pass
+    for pwm in [motor1a, motor1b, motor2a, motor2b, motor3a, motor3b, motor4a, motor4b]:
+        pwm.duty_u16(0)
 
 
 def read_battery_voltage():

@@ -1,5 +1,5 @@
 :root {
-            --gray: rgb(34, 48, 64);
+            --gray: #161b22;
             --blue: rgb(0, 122, 253);
             --green: rgb(6, 215, 108);
             --white: rgb(253, 251, 252);
@@ -19,8 +19,32 @@ h1 {
 }
 
 .container {
-    max-width: 1000px;
+
     margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+}
+.column-left {
+    flex: 1;
+    display: flex;         /* enable flex inside column */
+    flex-direction: column; /* stack children vertically */
+    gap: 10px;             /* space between panels */
+    padding: 10px;
+}
+
+.column-middle {
+    flex: 5;
+    display: flex;  
+    flex-direction: column; 
+    gap: 20px;     
+    padding: 10px;
+}
+.column-right {
+    flex: 1;
+    display: flex;  
+    flex-direction: column; 
+    gap: 10px;     
+    padding: 10px;
 }
 
 .panel {
@@ -28,7 +52,7 @@ h1 {
     border: 1px solid #30363d;
     border-radius: 6px;
     padding: 20px;
-    margin: 20px 0;
+
 }
 
 .label {
@@ -37,15 +61,15 @@ h1 {
 }
 
 .value {
-    font-size: 2.4em;
+    font-size: 1em;
     font-weight: bold;
     margin: 8px 0;
 }
 
 .status {
     text-align: center;
-    font-size: 1.4em;
-    margin: 30px 0;
+    font-size: .7em;
+
 }
 
 .level {
@@ -54,9 +78,10 @@ h1 {
 }
 
 .grid {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 5px;
 }
 
 button {
@@ -83,28 +108,23 @@ button:disabled {
 }
 
 .panel-motors {
-
     background-color: var(--gray);
     display: flex;
-    flex-wrap: wrap;
-    /* allows wrapping on small screens */
-    justify-content: center;
-    /* center gauges horizontally */
-    align-items: flex-start;
-    /* stick gauges to top */
-    margin: 0;
-    /* remove the 10% margin that pushes down */
+    flex-direction: column; 
+    align-items: center;   
+    gap: 15px;           
     padding: 20px;
-    /* optional padding from top and sides */
+    border: 1px solid #30363d;
+    border-radius: 6px;
 }
 
 .gauge {
     position: relative;
     margin: 15px;
     /* spacing between gauges */
-    width: 200px;
+    width: 80px;
     /* keep fixed so rotation math works */
-    height: 200px;
+    height: 80px;
     /* keep square */
 }
 
@@ -112,7 +132,7 @@ button:disabled {
 .meter-value {
     position: absolute;
     text-align: center;
-    margin-top: 80%;
+    margin-top: 50%;
     margin-left: 47%;
     z-index: 600;
     color: var(--white);
@@ -165,3 +185,73 @@ button:disabled {
     transform: rotate(-90deg);
     transform-origin: center right;
 }
+
+
+/* ────────────── Gyroscope ────────────── */
+
+.attitude-indicator {
+            width: 200px;
+            height: 200px;
+            border: 5px solid #333;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .horizon {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            transform-origin: center center;
+            transition: transform 0.1s linear;
+        }
+
+        .sky,
+        .ground {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+        }
+
+        .sky {
+            top: 0;
+            background: #66ccff;
+        }
+
+        .ground {
+            bottom: 0;
+            background: #996633;
+        }
+
+        .fixed-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .aircraft-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: #fff;
+            transform: translateY(-50%);
+        }
+
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }

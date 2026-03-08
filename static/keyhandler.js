@@ -15,7 +15,15 @@ const Input = {
 
     init() {
 
+        const controlKeys = [
+            "w", "a", "s", "d",
+            "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+            "Shift", " "
+        ];
+
         document.addEventListener("keydown", e => {
+
+            if (!controlKeys.includes(e.key)) return;
 
             if (!this.keys[e.key]) {
                 socket.send(JSON.stringify({
@@ -25,10 +33,11 @@ const Input = {
             }
 
             this.keys[e.key] = true;
-            e.preventDefault();
         });
 
         document.addEventListener("keyup", e => {
+
+            if (!controlKeys.includes(e.key)) return;
 
             socket.send(JSON.stringify({
                 key: e.key,
@@ -36,9 +45,7 @@ const Input = {
             }));
 
             this.keys[e.key] = false;
-            e.preventDefault();
         });
-
     },
 
     isDown(key) {
@@ -69,5 +76,32 @@ function update() {
 
     requestAnimationFrame(update);
 }
+
+let lastSent = -1;
+
+function captureMouseWheel() {
+    let wheelValue = 0;
+
+    window.addEventListener("wheel", e => {
+
+        wheelValue -= Math.sign(e.deltaY);
+        wheelValue = Math.max(0, Math.min(100, wheelValue));
+
+        if (wheelValue !== lastSent) {
+
+            socket.send(JSON.stringify({
+                type: "wheel",
+                value: wheelValue
+            }));
+
+            lastSent = wheelValue;
+        }
+
+        document.getElementById("accel").value = wheelValue;
+        document.getElementById("accel-val").textContent = wheelValue;
+
+    });
+}
+captureMouseWheel();
 
 update();

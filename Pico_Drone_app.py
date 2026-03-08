@@ -3,12 +3,14 @@
 # Includes "Connect to Drone" button to trigger BLE scan/connection
 
 import asyncio
+from http import client
 import json
 import struct
 import time
 from collections import deque
 from contextlib import asynccontextmanager
 from typing import List
+
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.responses import HTMLResponse
@@ -19,10 +21,12 @@ from fastapi.staticfiles import StaticFiles
 app = FastAPI(title="PicoDrone Live Dashboard")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+ble_client: BleakClient | None = None
 
 # ────────────── Configuration ──────────────
 DEVICE_NAME = "PicoDrone"
 SERVICE_UUID = "19b10000-e8f2-537e-4f6c-d104768a1214"
+RX_UUID = "19b10001-e8f2-537e-4f6c-d104768a1214"
 TX_UUID = "19b10002-e8f2-537e-4f6c-d104768a1214"
 
 # Shared state
@@ -54,6 +58,8 @@ async def connect_to_pico():
             print(f"[BLE] Found: {target.address} ({target.name})")
 
             async with BleakClient(target.address) as client:
+                global ble_client
+                ble_client = client
                 print("[BLE] Connected to PicoDrone!")
 
                 def notification_handler(sender, data):
@@ -177,19 +183,30 @@ async def dashboard(request: Request):
 async def controls_websocket(websocket: WebSocket):
     await websocket.accept()
     print("[WebSocket] Control client connected")
+
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"[WebSocket] Received control command: {data}")
             msg = json.loads(data)
 
-            key = msg["key"]
-            state = msg["state"]
+            if not ble_client or not ble_client.is_connected:
+                continue  # skip if not connected
 
-            print(key, state)
+            # Send wheel
+            if msg.get("type") == "wheel":
+                wheel_value = msg["value"]
+                await ble_client.write_gatt_char(RX_UUID, bytes([wheel_value]))
+
+            # Send keys
+            elif msg.get("key"):
+                key = msg["key"]
+                state = msg["state"]
+                # convert to a single byte or small JSON-like payload
+                payload = json.dumps({"key": key, "state": state}).encode()
+                await ble_client.write_gatt_char(RX_UUID, payload)
+
     except WebSocketDisconnect:
         print("[WebSocket] Control client disconnected")
-
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):

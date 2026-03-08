@@ -1,55 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .attitude-indicator {
+            width: 200px;
+            height: 200px;
+            border: 5px solid #333;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .horizon {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            transform-origin: center center;
+            transition: transform 0.1s linear;
+        }
+
+        .sky,
+        .ground {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+        }
+
+        .sky {
+            top: 0;
+            background: #66ccff;
+        }
+
+        .ground {
+            bottom: 0;
+            background: #996633;
+        }
+
+        .fixed-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .aircraft-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            width: 80%;
+            height: 2px;
+            background: #fff;
+            transform: translateY(-50%);
+        }
+
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
 
 <body>
 
-<h1>Drone Controls</h1>
-<p id="keyDisplay"></p>
+    <div class="attitude-indicator">
+        <div class="horizon" id="horizon">
+            <div class="sky"></div>
+            <div class="ground"></div>
+        </div>
+        <div class="fixed-overlay">
+            <div class="aircraft-line"></div>
+            <div class="center-dot"></div>
+        </div>
+    </div>
+    <script>
+        /// Simulate pitch and roll
+        let pitch = 0; // degrees
+        let roll = 0;  // degrees
 
-<script>
+        function updateHorizon(pitch, roll) {
+            const horizon = document.getElementById("horizon");
+            // Translate vertically for pitch, rotate for roll
+            horizon.style.transform = `rotate(${roll}deg) translateY(${pitch}px)`;
+        }
 
-const display = document.getElementById("keyDisplay");
-
-const Input = {
-    keys: {},
-
-    init() {
-        document.addEventListener("keydown", e => this.keys[e.key] = true);
-        document.addEventListener("keyup", e => this.keys[e.key] = false);
-    },
-
-    isDown(key) {
-        return this.keys[key];
-    }
-};
-
-Input.init();
-
-function update() {
-
-    let action = "";
-
-    if (Input.isDown("w")) action = "Move forward";
-    if (Input.isDown("s")) action = "Move backward";
-    if (Input.isDown("a")) action = "Move left";
-    if (Input.isDown("d")) action = "Move right";
-
-    if (Input.isDown(" ")) action = "Move up";
-    if (Input.isDown("Shift")) action = "Move down";
-
-    if (Input.isDown("ArrowUp")) action = "Tilt down";
-    if (Input.isDown("ArrowDown")) action = "Tilt up";
-    if (Input.isDown("ArrowLeft")) action = "Tilt left";
-    if (Input.isDown("ArrowRight")) action = "Tilt right";
-
-    display.textContent = action;
-
-    requestAnimationFrame(update);
-}
-
-update();
-
-</script>
-
+        // Demo: oscillate pitch and roll
+        let t = 0;
+        setInterval(() => {
+            pitch = 20 * Math.sin(t / 50);  // pitch up/down
+            roll = 30 * Math.sin(t / 100);  // roll left/right
+            console.log(`Pitch: ${pitch.toFixed(1)}°, Roll: ${roll.toFixed(1)}°`);
+            updateHorizon(pitch, roll);
+            t++;
+        }, 30);
+    </script>
 </body>
+
 </html>
