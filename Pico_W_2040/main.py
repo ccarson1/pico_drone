@@ -33,6 +33,10 @@ TX_UUID = bluetooth.UUID("19b10002-e8f2-537e-4f6c-d104768a1214")
 
 
 service = aioble.Service(SERVICE_UUID)
+
+print("Attributes of Character")
+print(dir(aioble.Characteristic))
+
 rx_char = aioble.Characteristic(
     service,
     RX_UUID,
@@ -40,6 +44,15 @@ rx_char = aioble.Characteristic(
     write_no_response=True,
     notify=False
 )
+
+async def rx_listener(rx_char):
+    while True:
+        await rx_char.written()
+        data = rx_char.read()
+
+        if data:
+            print("BLE RX:", data)
+            await rx_handler(rx_char, data)
 
 async def rx_handler(characteristic, data):
     """Handle incoming control commands from BLE (wheel/key)."""
@@ -62,14 +75,13 @@ async def rx_handler(characteristic, data):
         except Exception as e:
             print("Failed to parse control payload:", e)
 
-# Attach callback
-#rx_char.callback(trigger=aioble.FLAG_WRITE, handler=rx_handler)
 
 tx_char = aioble.Characteristic(service, TX_UUID, read=True, notify=True)
 aioble.register_services(service)
-battery_adc = ADC(29)
 vsys_enable = Pin(25, Pin.OUT)
 vsys_enable.value(1)
+battery_adc = ADC(29)
+
 battery_samples = []
 
 def set_motor(m_a, m_b, speed):
@@ -115,42 +127,24 @@ async def main():
                 services=[SERVICE_UUID],
             ) as connection:
                 print("Connected! Connection obj:", connection)
-                
-                await asyncio.sleep_ms(1000)
-                
-                last_notify_time = 0
-                
+
+                # Give central time to subscribe
+                await asyncio.sleep_ms(1500)
+
+                # Start listening for writes
+                asyncio.create_task(rx_listener(rx_char))
+
+                # Main loop: read MPU6050, send battery + accel/gyro
                 while True:
-                    try:
-                        ax, ay, az = mpu.accel.xyz
-                        gx, gy, gz = mpu.gyro.xyz
-                        
-                        #print(f"Local read: Acc {ax:.2f} {ay:.2f} {az:.2f} | Gyro {gx:.2f} {gy:.2f} {gz:.2f}")
-                        
-                        
-                        
-                        data = struct.pack("6fB", ax, ay, az, gx, gy, gz, percent)
-                        print(data)
-                        
+                    ax, ay, az = mpu.accel.xyz
+                    gx, gy, gz = mpu.gyro.xyz
+                    data = struct.pack("6fB", ax, ay, az, gx, gy, gz, battery_percent(read_battery_voltage()))
+                    for _ in range(3):
                         try:
                             await tx_char.notify(connection, data)
-                            #print("Notify sent OK (24 bytes)")
-                            
-                        except Exception as notify_e:
-                            #print("Notify failed this time:", str(notify_e))
-                            # Continue anyway - don't break
-                            pass
-                        
-                        last_notify_time = time.ticks_ms()
-                        
-                        
-
-                        
-                        
-                    except Exception as e:
-                        print("Sensor read error:", str(e))
-                        break
-                    
+                            break
+                        except Exception:
+                            await asyncio.sleep_ms(50)
                     await asyncio.sleep_ms(400)
                 
                 print("Inner loop exited - waiting for disconnect")
@@ -162,3 +156,4 @@ async def main():
             await asyncio.sleep(1)
 
 asyncio.run(main())
+

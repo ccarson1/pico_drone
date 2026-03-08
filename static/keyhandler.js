@@ -10,6 +10,12 @@ socket.onclose = () => {
     console.log("Disconnected from control server");
 };
 
+function sendMessage(msg) {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(msg));
+    }
+}
+
 const Input = {
     keys: {},
 
@@ -26,10 +32,10 @@ const Input = {
             if (!controlKeys.includes(e.key)) return;
 
             if (!this.keys[e.key]) {
-                socket.send(JSON.stringify({
+                sendMessage({
                     key: e.key,
                     state: "down"
-                }));
+                });
             }
 
             this.keys[e.key] = true;
@@ -39,10 +45,10 @@ const Input = {
 
             if (!controlKeys.includes(e.key)) return;
 
-            socket.send(JSON.stringify({
-                key: e.key,
-                state: "up"
-            }));
+            sendMessage({
+                    key: e.key,
+                    state: "up"
+                });
 
             this.keys[e.key] = false;
         });
@@ -81,6 +87,7 @@ let lastSent = -1;
 
 function captureMouseWheel() {
     let wheelValue = 0;
+    let lastSent = wheelValue;
 
     window.addEventListener("wheel", e => {
 

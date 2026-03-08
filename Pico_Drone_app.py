@@ -63,7 +63,6 @@ async def connect_to_pico():
                 print("[BLE] Connected to PicoDrone!")
 
                 def notification_handler(sender, data):
-                    print(data)
                     global latest_reading
                     if len(data) != 25:
                         print(f"[BLE] Unexpected data length: {len(data)} bytes")
@@ -96,11 +95,11 @@ async def connect_to_pico():
 
                         asyncio.create_task(broadcast_data(reading))
 
-                        print(
-                            f"[{timestamp}] Acc: {ax:6.3f} {ay:6.3f} {az:6.3f} g | "
-                            f"Gyro: {gx:6.3f} {gy:6.3f} {gz:6.3f} °/s "
-                            f"{'(level)' if reading['level'] else ''}"
-                        )
+                        # print(
+                        #     f"[{timestamp}] Acc: {ax:6.3f} {ay:6.3f} {az:6.3f} g | "
+                        #     f"Gyro: {gx:6.3f} {gy:6.3f} {gz:6.3f} °/s "
+                        #     f"{'(level)' if reading['level'] else ''}"
+                        # )
 
                     except struct.error as e:
                         print(f"[BLE] Unpack error: {e}")
@@ -189,13 +188,19 @@ async def controls_websocket(websocket: WebSocket):
             data = await websocket.receive_text()
             msg = json.loads(data)
 
-            if not ble_client or not ble_client.is_connected:
-                continue  # skip if not connected
+            # if not ble_client or not ble_client.is_connected:
+            #     continue  # skip if not connected
 
+            print(f"[WebSocket] Received control message: {msg}")
             # Send wheel
             if msg.get("type") == "wheel":
                 wheel_value = msg["value"]
-                await ble_client.write_gatt_char(RX_UUID, bytes([wheel_value]))
+                if ble_client and ble_client.is_connected:
+                    await ble_client.write_gatt_char(RX_UUID, bytes([wheel_value]), response=False)
+                    print(f"[WebSocket] Sent wheel command: {wheel_value}")
+                else:
+                    print("BLE not connected")
+                
 
             # Send keys
             elif msg.get("key"):
@@ -203,7 +208,11 @@ async def controls_websocket(websocket: WebSocket):
                 state = msg["state"]
                 # convert to a single byte or small JSON-like payload
                 payload = json.dumps({"key": key, "state": state}).encode()
-                await ble_client.write_gatt_char(RX_UUID, payload)
+                if ble_client and ble_client.is_connected:
+                    await ble_client.write_gatt_char(RX_UUID, payload, response=False)
+                    print(f"[WebSocket] Sent key command: {key} = {state}")
+                else:
+                    print("BLE not connected")
 
     except WebSocketDisconnect:
         print("[WebSocket] Control client disconnected")
