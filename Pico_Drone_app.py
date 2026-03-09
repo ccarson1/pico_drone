@@ -39,13 +39,15 @@ connecting = False
 connection_task = None
 
 
+
+
 # ────────────── BLE connection task ──────────────
 async def connect_to_pico():
     global latest_reading, connecting
 
     print(f"\n[BLE] Starting scan for {DEVICE_NAME} ...")
 
-    while True:  # retry loop
+    while connecting:  # retry loop
         try:
             devices = await BleakScanner.discover(timeout=12.0)
             target = next((d for d in devices if d.name == DEVICE_NAME), None)
@@ -63,33 +65,32 @@ async def connect_to_pico():
                 print("[BLE] Connected to PicoDrone!")
 
                 def notification_handler(sender, data):
-                    global latest_reading
-                    if len(data) != 25:
+                    global latest_reading, ble_client
+
+                    if ble_client is None or not ble_client.is_connected:
+                        return
+                    if len(data) != 29:
                         print(f"[BLE] Unexpected data length: {len(data)} bytes")
                         return
 
                     try:
-                        ax, ay, az, gx, gy, gz, battery = struct.unpack("6fB", data)
+                        ax, ay, az, gx, gy, gz, battery, m1, m2, m3, m4 = struct.unpack("6fB4B", data)
                         timestamp = time.strftime("%H:%M:%S")
 
                         reading = {
                             "timestamp": timestamp,
-                            "accel": {
-                                "x": round(ax, 3),
-                                "y": round(ay, 3),
-                                "z": round(az, 3),
-                            },
-                            "gyro": {
-                                "x": round(gx, 3),
-                                "y": round(gy, 3),
-                                "z": round(gz, 3),
-                            },
-                            "level": abs(ax) < 0.15
-                            and abs(ay) < 0.15
-                            and 0.9 < az < 1.1,
+                            "accel": {"x": round(ax,3), "y": round(ay,3), "z": round(az,3)},
+                            "gyro": {"x": round(gx,3), "y": round(gy,3), "z": round(gz,3)},
                             "battery": battery,
+                            "motors": {
+                                "motor1": m1,
+                                "motor2": m2,
+                                "motor3": m3,
+                                "motor4": m4,
+                            }
                         }
-
+                        #print(f"[BLE] Motors: {m1}, {m2}, {m3}, {m4}")
+                        print(f"[BLE] Battery: {battery}%")
                         latest_reading = reading
                         data_history.append(reading)
 
@@ -112,11 +113,15 @@ async def connect_to_pico():
 
         except Exception as e:
             print(f"[BLE] Connection error: {e}")
+
+            if not connecting:
+                break
+
             print("[BLE] Reconnecting in 5 seconds...")
             await asyncio.sleep(5)
 
-        finally:
-            connecting = False
+        # finally:
+        #     connecting = False
 
 
 # ────────────── WebSocket broadcast ──────────────
@@ -171,6 +176,30 @@ async def trigger_connect():
         "message": "Starting connection to drone...",
     }
 
+@app.post("/disconnect")
+async def disconnect_drone():
+    global ble_client, connection_task, connecting
+
+    print("[API] Disconnect requested")
+
+    connecting = False
+
+    if ble_client and ble_client.is_connected:
+        try:
+            await ble_client.stop_notify(TX_UUID)
+        except:
+            pass
+
+        await ble_client.disconnect()
+
+    if connection_task and not connection_task.done():
+        connection_task.cancel()
+
+    ble_client = None
+    connection_task = None
+
+    return {"status": "disconnected"}
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse(
@@ -191,13 +220,13 @@ async def controls_websocket(websocket: WebSocket):
             # if not ble_client or not ble_client.is_connected:
             #     continue  # skip if not connected
 
-            print(f"[WebSocket] Received control message: {msg}")
+            #print(f"[WebSocket] Received control message: {msg}")
             # Send wheel
             if msg.get("type") == "wheel":
                 wheel_value = msg["value"]
                 if ble_client and ble_client.is_connected:
                     await ble_client.write_gatt_char(RX_UUID, bytes([wheel_value]), response=False)
-                    print(f"[WebSocket] Sent wheel command: {wheel_value}")
+                    #print(f"[WebSocket] Sent wheel command: {wheel_value}")
                 else:
                     print("BLE not connected")
                 

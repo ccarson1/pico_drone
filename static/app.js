@@ -5,32 +5,13 @@ let gauge_1 = document.getElementsByClassName('bar')[1];
 let gauge_2 = document.getElementsByClassName('bar')[2];
 let gauge_3 = document.getElementsByClassName('bar')[3];
 
-var slider_0 = document.getElementById("myRange_0");
-var slider_1 = document.getElementById("myRange_1");
-var slider_2 = document.getElementById("myRange_2");
-var slider_3 = document.getElementById("myRange_3");
 
 
 let pitch = 0;
 let roll = 0;
 
 
-slider_0.oninput = function () {
-    document.getElementById('speed-value-0').innerHTML = this.value;
-    gauge_0.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
-}
-slider_1.oninput = function () {
-    document.getElementById('speed-value-1').innerHTML = this.value;
-    gauge_1.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
-}
-slider_2.oninput = function () {
-    document.getElementById('speed-value-2').innerHTML = this.value;
-    gauge_2.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
-}
-slider_3.oninput = function () {
-    document.getElementById('speed-value-3').innerHTML = this.value;
-    gauge_3.style.transform = "rotate(" + String(((this.value * 1.8) - 90)) + "deg)";
-}
+
 
 function updateHorizon(pitch, roll) {
     const horizon = document.getElementById("horizon");
@@ -65,6 +46,21 @@ function connectWebSocket() {
         pitch = data.gyro.x.toFixed(3);
         roll = data.gyro.y.toFixed(3);
         yaw = data.gyro.z.toFixed(3);
+
+        // Motor values
+        const motors = data.motors;
+        console.log("Motors:", motors);
+
+        // Example: update a div in HTML
+        document.getElementById("speed-value-0").innerText = motors.motor1;
+        document.getElementById("speed-value-1").innerText = motors.motor2;
+        document.getElementById("speed-value-2").innerText = motors.motor3;
+        document.getElementById("speed-value-3").innerText = motors.motor4;
+
+        gauge_0.style.transform = "rotate(" + String(((motors.motor1 * 1.8) - 90)) + "deg)";
+        gauge_1.style.transform = "rotate(" + String(((motors.motor2 * 1.8) - 90)) + "deg)";
+        gauge_2.style.transform = "rotate(" + String(((motors.motor3 * 1.8) - 90)) + "deg)";
+        gauge_3.style.transform = "rotate(" + String(((motors.motor4 * 1.8) - 90)) + "deg)";
 
 
         updateHorizon(pitch, roll);
@@ -126,29 +122,49 @@ connectWebSocket();
 
 
 // Connect button logic
+let droneConnected = false;
+
 document.getElementById("connectBtn").addEventListener("click", async () => {
 
-    document.getElementById("connectStatus").textContent =
-        "Starting connection to drone...";
-
-    document.getElementById("connectBtn").disabled = true;
+    const btn = document.getElementById("connectBtn");
 
     try {
 
-        const response = await fetch("/connect", { method: "POST" });
-        const data = await response.json();
+        if (!droneConnected) {
 
-        if (data.status === "connection_started") {
+            document.getElementById("connectStatus").textContent =
+                "Starting connection to drone...";
+
+            btn.disabled = true;
+
+            const response = await fetch("/connect", { method: "POST" });
+            const data = await response.json();
 
             document.getElementById("connectStatus").textContent =
                 "Scanning and connecting...";
 
+            btn.textContent = "Disconnect Drone";
+            btn.disabled = false;
+
+            droneConnected = true;
+
         } else {
 
             document.getElementById("connectStatus").textContent =
-                data.message || "Already connecting";
+                "Disconnecting...";
 
-            document.getElementById("connectBtn").disabled = false;
+            btn.disabled = true;
+
+            const response = await fetch("/disconnect", { method: "POST" });
+            const data = await response.json();
+
+            document.getElementById("connectStatus").textContent =
+                "Drone disconnected";
+
+            btn.textContent = "Connect to Drone";
+            btn.disabled = false;
+
+            droneConnected = false;
         }
 
     } catch (err) {
@@ -156,11 +172,11 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
         console.error(err);
 
         document.getElementById("connectStatus").textContent =
-            "Failed to trigger connection";
+            "Connection error";
 
-        document.getElementById("connectBtn").disabled = false;
-
+        btn.disabled = false;
     }
+
 });
 
 

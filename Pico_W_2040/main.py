@@ -20,6 +20,14 @@ motor3b = PWM(Pin(5))
 motor4a = PWM(Pin(6))
 motor4b = PWM(Pin(7))
 
+# Store last PWM values for each motor
+motor_state = {
+    "motor1": 0,
+    "motor2": 0,
+    "motor3": 0,
+    "motor4": 0,
+}
+
 for pwm in [motor1a, motor1b, motor2a, motor2b, motor3a, motor3b, motor4a, motor4b]:
     pwm.freq(1000)
     pwm.duty_u16(0)
@@ -59,10 +67,16 @@ async def rx_handler(characteristic, data):
     if len(data) == 1:
         # Single byte → wheel value
         wheel_value = data[0]
+        pwm_speed = wheel_to_pwm(wheel_value)
         print("Wheel command:", wheel_value)
         # TODO: map wheel_value to motor PWM
         # Example for front motors:
         # set_motor(motor1a, motor1b, wheel_value)
+        # Set all motors
+        set_motor(motor1a, motor1b, pwm_speed)
+        set_motor(motor2a, motor2b, pwm_speed)
+        set_motor(motor3a, motor3b, pwm_speed) #Front Right
+        set_motor(motor4a, motor4b, pwm_speed, reverse=True)#Front Left
     else:
         # Assume JSON payload → key press
         try:
@@ -84,11 +98,28 @@ battery_adc = ADC(29)
 
 battery_samples = []
 
-def set_motor(m_a, m_b, speed):
-    """Speed: 0-255 (example)."""
-    duty = int(speed / 255 * 65535)
-    m_a.duty_u16(duty)
-    m_b.duty_u16(0)  # simple forward/backward logic
+
+def wheel_to_pwm(wheel_value):
+    # Ensure speed is within 0-100
+    return max(0, min(100, wheel_value))
+
+def set_motor(m_a, m_b, speed, reverse=False):
+    """
+    Speed: 0 (stop) to 100 (full forward)
+    """
+    duty = int(speed / 100 * 65535)
+    if reverse:
+        m_a.duty_u16(0)
+        m_b.duty_u16(duty)
+    else:
+        m_a.duty_u16(duty)
+        m_b.duty_u16(0)
+
+    # Track motor state for front-end
+    if m_a == motor1a: motor_state["motor1"] = speed
+    elif m_a == motor2a: motor_state["motor2"] = speed
+    elif m_a == motor3a: motor_state["motor3"] = speed
+    elif m_a == motor4a: motor_state["motor4"] = speed
 
 def stop_all():
     for pwm in [motor1a, motor1b, motor2a, motor2b, motor3a, motor3b, motor4a, motor4b]:
@@ -97,7 +128,7 @@ def stop_all():
 
 def read_battery_voltage():
     raw = battery_adc.read_u16()
-    print("RAW ADC:", raw)
+    #print("RAW ADC:", raw)
     voltage = raw * 3.3 / 65535 * 3
 
     battery_samples.append(voltage)
@@ -138,7 +169,17 @@ async def main():
                 while True:
                     ax, ay, az = mpu.accel.xyz
                     gx, gy, gz = mpu.gyro.xyz
-                    data = struct.pack("6fB", ax, ay, az, gx, gy, gz, battery_percent(read_battery_voltage()))
+                    data = struct.pack(
+                        "6fB4B",
+                        ax, ay, az,
+                        gx, gy, gz,
+                        battery_percent(read_battery_voltage()),
+                        motor_state["motor1"],
+                        motor_state["motor2"],
+                        motor_state["motor3"],
+                        motor_state["motor4"]
+                    )
+                    
                     for _ in range(3):
                         try:
                             await tx_char.notify(connection, data)
