@@ -1,0 +1,93 @@
+.compass-container {
+    text-align: center;
+}
+
+.compass {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    border: 6px solid #333;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #161b22 0%, #333 100%);
+    margin: 0 auto 20px auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.compass-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform-origin: center center;
+    transition: transform 0.3s ease-out;
+}
+
+/* Needle container (centered) */
+.needle {
+    position: absolute;
+    width: 0;
+    height: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+}
+
+/* Red tip pointing outward */
+.needle::before {
+    content: '';
+    position: absolute;
+    top: -80px; /* longer than before */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;  /* wider */
+    border-right: 8px solid transparent; /* wider */
+    border-bottom: 80px solid red;       /* longer */
+}
+
+/* White tail pointing inward */
+.needle::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; /* longer than before */
+    left: 50%;
+    transform: translateX(-50%) rotate(180deg);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;   /* wider */
+    border-right: 8px solid transparent;  /* wider */
+    border-bottom: 60px solid white;      /* longer */
+}
+
+.compass-center {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #333;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+}
+
+.direction {
+    position: absolute;
+    font-weight: bold;
+    font-size: 16px;
+    transform-origin: center center;
+    user-select: none;
+
+}
+
+.degree-mark {
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: #ddd;
+    top: 0;
+    left: 50%;
+    transform-origin: bottom center;
+}

@@ -5,7 +5,7 @@ import asyncio
 import bluetooth
 from machine import Pin, PWM, I2C, ADC
 import struct
-from libs.imu import MPU6050
+from lib.imu import MPU6050
 import time
 
 # ────────────── Pin definitions ──────────────
@@ -33,6 +33,8 @@ for pwm in [motor1a, motor1b, motor2a, motor2b, motor3a, motor3b, motor4a, motor
     pwm.duty_u16(0)
 
 mpu = MPU6050(i2c)
+
+
 
 # ────────────── BLE setup ──────────────
 SERVICE_UUID = bluetooth.UUID("19b10000-e8f2-537e-4f6c-d104768a1214")
@@ -197,4 +199,5 @@ async def main():
             await asyncio.sleep(1)
 
 asyncio.run(main())
+
 

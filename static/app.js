@@ -69,7 +69,7 @@ function connectWebSocket() {
 
         // Tilt direction logic
         const threshold = 0.25;
-        let tiltText = "Level / flat ✓";
+        let tiltText = "Level / flat";
         let tiltColor = "#58a6ff";
 
         const directions = [];
