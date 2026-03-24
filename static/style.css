@@ -1,9 +1,9 @@
 :root {
-            --gray: #161b22;
-            --blue: rgb(0, 122, 253);
-            --green: rgb(6, 215, 108);
-            --white: rgb(253, 251, 252);
-        }
+    --gray: #161b22;
+    --blue: rgb(0, 122, 253);
+    --green: rgb(6, 215, 108);
+    --white: rgb(253, 251, 252);
+}
 
 body {
     font-family: Arial, sans-serif;
@@ -38,24 +38,28 @@ h1 {
 
 .column-left {
     flex: 1;
-    display: flex;         /* enable flex inside column */
-    flex-direction: column; /* stack children vertically */
-    gap: 10px;             /* space between panels */
+    display: flex;
+    /* enable flex inside column */
+    flex-direction: column;
+    /* stack children vertically */
+    gap: 10px;
+    /* space between panels */
     padding: 10px;
 }
 
 .column-middle {
     flex: 5;
-    display: flex;  
-    flex-direction: column; 
-    gap: 20px;     
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     padding: 10px;
 }
+
 .column-right {
     flex: 1;
-    display: flex;  
-    flex-direction: column; 
-    gap: 10px;     
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     padding: 10px;
 }
 
@@ -63,8 +67,12 @@ h1 {
     background: #161b22;
     border: 1px solid #30363d;
     border-radius: 6px;
-    padding: 20px;
+    padding: 10px;
     font-size: .8em;
+    display: flex;
+}
+.panel-container{
+    margin: auto;
 }
 
 .label {
@@ -122,9 +130,9 @@ button:disabled {
 .panel-motors {
     background-color: var(--gray);
     display: flex;
-    flex-direction: column; 
-    align-items: center;   
-    gap: 15px;           
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
     padding: 20px;
     border: 1px solid #30363d;
     border-radius: 6px;
@@ -202,68 +210,119 @@ button:disabled {
 /* ────────────── Gyroscope ────────────── */
 
 .attitude-indicator {
-            width: 200px;
-            height: 200px;
-            border: 5px solid #333;
-            border-radius: 50%;
-            position: relative;
-            overflow: hidden;
-            background: #000;
-        }
+    width: 100px;
+    height: 100px;
+    border: 5px solid #333;
+    border-radius: 50%;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+}
 
-        .horizon {
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            top: -50%;
-            left: -50%;
-            transform-origin: center center;
-            transition: transform 0.1s linear;
-        }
+.horizon {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    transform-origin: center center;
+    transition: transform 0.1s linear;
+}
 
-        .sky,
-        .ground {
-            position: absolute;
-            width: 100%;
-            height: 50%;
-        }
+.sky,
+.ground {
+    position: absolute;
+    width: 100%;
+    height: 50%;
+}
 
-        .sky {
-            top: 0;
-            background: #66ccff;
-        }
+.sky {
+    top: 0;
+    background: #66ccff;
+}
 
-        .ground {
-            bottom: 0;
-            background: #996633;
-        }
+.ground {
+    bottom: 0;
+    background: #996633;
+}
 
-        .fixed-overlay {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-        }
+.pitch-line {
+    position: absolute;
+    left: 50%;
+    width: 60px;
+    height: 2px;
+    background: #fff;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #fff;
+    text-align: right;
+}
 
-        .aircraft-line {
-            position: absolute;
-            top: 50%;
-            left: 10%;
-            width: 80%;
-            height: 2px;
-            background: #fff;
-            transform: translateY(-50%);
-        }
+.pitch-label {
+    position: absolute;
+    left: 55%;
+    color: #fff;
+    font-size: 10px;
+    transform: translateY(-50%);
+}
 
-        .center-dot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 6px;
-            height: 6px;
-            background: #fff;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-        }
+.fixed-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.aircraft-line {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    width: 80%;
+    height: 2px;
+    background: #fff;
+    transform: translateY(-50%);
+}
+
+.center-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.altimeter-gauge {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #000;
+    margin: 0 auto;
+}
+
+.altimeter-needle {
+    position: absolute;
+    width: 2px;
+    height: 45%; /* needle length */
+    background: #ff4444;
+    top: 0%;   /* center vertically */
+    left: 50%;  /* center horizontally */
+    transform-origin: 50% 100%; /* pivot from bottom of needle */
+    transform: rotate(-100deg) translateX(-50%);
+    transition: transform 0.1s linear;
+}
+
+.altimeter-value {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    bottom: 5px;
+    color: #fff;
+    font-size: 14px;
+}

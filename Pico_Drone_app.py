@@ -69,18 +69,34 @@ async def connect_to_pico():
 
                     if ble_client is None or not ble_client.is_connected:
                         return
-                    if len(data) != 29:
+
+                    # ---------- Check for text status messages ----------
+                    try:
+                        text = data.decode().strip()
+
+                        if text in ["calibrating", "calibrated"]:
+                            print(f"[BLE STATUS] {text}")
+                            return
+
+                    except:
+                        pass
+
+
+                    # ---------- Handle normal sensor packet ----------
+                    if len(data) != 37:
                         print(f"[BLE] Unexpected data length: {len(data)} bytes")
                         return
 
                     try:
-                        ax, ay, az, gx, gy, gz, battery, m1, m2, m3, m4 = struct.unpack("6fB4B", data)
+                        ax, ay, az, gx, gy, gz, heading, distance, battery, m1, m2, m3, m4 = struct.unpack("8fB4B", data)
                         timestamp = time.strftime("%H:%M:%S")
 
                         reading = {
                             "timestamp": timestamp,
                             "accel": {"x": round(ax,3), "y": round(ay,3), "z": round(az,3)},
                             "gyro": {"x": round(gx,3), "y": round(gy,3), "z": round(gz,3)},
+                            "heading": heading,
+                            "distance": distance,
                             "battery": battery,
                             "motors": {
                                 "motor1": m1,
@@ -89,18 +105,15 @@ async def connect_to_pico():
                                 "motor4": m4,
                             }
                         }
-                        #print(f"[BLE] Motors: {m1}, {m2}, {m3}, {m4}")
-                        print(f"[BLE] Battery: {battery}%")
+
+                        #print(f"[BLE] Battery: {battery}%")
+                        print("Heading:", round(heading,1))
+                        print("Distance:", distance, "mm")
+
                         latest_reading = reading
                         data_history.append(reading)
 
                         asyncio.create_task(broadcast_data(reading))
-
-                        # print(
-                        #     f"[{timestamp}] Acc: {ax:6.3f} {ay:6.3f} {az:6.3f} g | "
-                        #     f"Gyro: {gx:6.3f} {gy:6.3f} {gz:6.3f} °/s "
-                        #     f"{'(level)' if reading['level'] else ''}"
-                        # )
 
                     except struct.error as e:
                         print(f"[BLE] Unpack error: {e}")
@@ -199,6 +212,30 @@ async def disconnect_drone():
     connection_task = None
 
     return {"status": "disconnected"}
+
+    
+#calibrate
+@app.post("/calibrate")
+async def calibrate_drone():
+    global ble_client
+
+    print("[API] Calibrate requested")
+
+    if ble_client and ble_client.is_connected:
+        try:
+            # Send a specific command to trigger calibration (e.g., 0xFF)
+            await ble_client.write_gatt_char(RX_UUID, bytes([0xFF]), response=False)
+            print("[API] Sent calibrate command")
+            return {"status": "calibrate_command_sent"}
+        except Exception as e:
+            print(f"[API] Error sending calibrate command: {e}")
+            return {"status": "error", "message": str(e)}
+    else:
+        print("[API] Cannot calibrate - BLE not connected")
+        return {"status": "error", "message": "Not connected to drone"}
+
+
+
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):

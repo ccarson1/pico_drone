@@ -5,18 +5,27 @@ let gauge_1 = document.getElementsByClassName('bar')[1];
 let gauge_2 = document.getElementsByClassName('bar')[2];
 let gauge_3 = document.getElementsByClassName('bar')[3];
 
+let calibrateBtn = document.getElementById("calibrateBtn");
+
 
 
 let pitch = 0;
 let roll = 0;
 
+let droneConnected = false;
 
 
-
-function updateHorizon(pitch, roll) {
+function updateHorizon(pitchDeg, rollDeg) {
     const horizon = document.getElementById("horizon");
-    // Translate vertically for pitch, rotate for roll
-    horizon.style.transform = `rotate(${roll}deg) translateY(${pitch}px)`;
+    horizon.style.transform = `rotate(${rollDeg}deg)`;
+
+    const lines = document.querySelectorAll("#pitch-lines .pitch-line");
+    const scale = 2; // pixels per degree
+
+    lines.forEach(line => {
+        const deg = parseInt(line.dataset.deg);
+        line.style.transform = `translateY(${(deg - pitchDeg) * scale}px) translateX(-50%)`;
+    });
 }
 
 function connectWebSocket() {
@@ -40,8 +49,13 @@ function connectWebSocket() {
         document.getElementById("gx").textContent = data.gyro.x.toFixed(3);
         document.getElementById("gy").textContent = data.gyro.y.toFixed(3);
         document.getElementById("gz").textContent = data.gyro.z.toFixed(3);
+        document.getElementById("heading").textContent = data.heading.toFixed(1) + "°";
         document.getElementById("battery").textContent = data.battery + "%";
+        document.getElementById("altimeter-value").textContent = data.distance + " mm";
         //console.log("Received data:", data);
+
+        updateAltimeter(data.distance - 75);
+        updateCompass(data.heading.toFixed(1));
 
         pitch = data.gyro.x.toFixed(3);
         roll = data.gyro.y.toFixed(3);
@@ -49,7 +63,7 @@ function connectWebSocket() {
 
         // Motor values
         const motors = data.motors;
-        console.log("Motors:", motors);
+        //console.log("Motors:", motors);
 
         // Example: update a div in HTML
         document.getElementById("speed-value-0").innerText = motors.motor1;
@@ -65,7 +79,7 @@ function connectWebSocket() {
 
         updateHorizon(pitch, roll);
 
-        
+
 
         // Tilt direction logic
         const threshold = 0.25;
@@ -122,7 +136,7 @@ connectWebSocket();
 
 
 // Connect button logic
-let droneConnected = false;
+
 
 document.getElementById("connectBtn").addEventListener("click", async () => {
 
@@ -148,6 +162,9 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
 
             droneConnected = true;
 
+            calibrateBtn.disabled = false;
+
+
         } else {
 
             document.getElementById("connectStatus").textContent =
@@ -165,6 +182,8 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
             btn.disabled = false;
 
             droneConnected = false;
+
+            calibrateBtn.disabled = true;
         }
 
     } catch (err) {
@@ -179,10 +198,54 @@ document.getElementById("connectBtn").addEventListener("click", async () => {
 
 });
 
+document.getElementById("calibrateBtn").addEventListener("click", calibrate);
 
+function calibrate() {
+    fetch("/calibrate", { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            console.log(data);
 
-// Demo: oscillate pitch and roll
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Calibration failed!");
+        });
+}
 
-// setInterval(() => {
-    
-// }, 60);
+const pitchLinesContainer = document.getElementById("pitch-lines");
+
+// Create pitch lines
+for (let deg = -30; deg <= 30; deg += 10) {
+    if (deg === 0) continue; // skip zero (the aircraft line already covers this)
+
+    const line = document.createElement("div");
+    line.className = "pitch-line";
+    line.style.top = `50%`; // center as baseline
+    line.dataset.deg = deg;
+
+    // label
+    const label = document.createElement("div");
+    label.className = "pitch-label";
+    label.textContent = `${Math.abs(deg)}°`;
+    if (deg < 0) label.style.top = "100%"; // label below for negative pitch
+    else label.style.top = "-100%";        // label above for positive pitch
+
+    line.appendChild(label);
+    pitchLinesContainer.appendChild(line);
+}
+
+function updateAltimeter(distanceMm) {
+    const needle = document.getElementById("altimeter-needle");
+    const valueDisplay = document.getElementById("altimeter-value");
+
+    // Clamp distance for gauge
+    const maxDistance = 3000; // adjust to your max altitude
+    const clamped = Math.min(distanceMm, maxDistance);
+
+    // Map distance to degrees (0 mm = 0°, maxDistance = 270°)
+    const angle = (clamped / maxDistance) * 270;
+
+    needle.style.transform = `translateX(-50%) rotate(${angle-100}deg)`;
+    valueDisplay.textContent = `${distanceMm.toFixed(0)} mm`;
+}

@@ -1,11 +1,11 @@
 const compassFace = document.getElementById('compassFace');
 const headingText = document.getElementById('heading');
 
-const compassSize = 200;
-const compassRadius = compassSize / 2 - 20;
+const compassSize = 100;
+const compassRadius = compassSize / 2 - 5;
 
 // Radius for direction letters (closer to center)
-const letterRadius = compassRadius - 30;
+const letterRadius = compassRadius - 12;
 
 let heading = 0;           // starting heading
 let lastTime = Date.now(); // timestamp of last update
@@ -31,10 +31,10 @@ directions.forEach((dir, i) => {
 });
 
 // Add degree marks
-for(let i = 0; i < 360; i += 10){
+for(let i = 0; i < 360; i += 8){
     const mark = document.createElement('div');
     mark.className = 'degree-mark';
-    const length = (i % 30 === 0)? 11 : 8;
+    const length = (i % 45 === 0)? 15 : 8;
     mark.style.height = `${length}px`;
 
     const rad = (i-90) * Math.PI / 180;
@@ -42,35 +42,49 @@ for(let i = 0; i < 360; i += 10){
     const y = compassSize / 2 + (compassRadius - length) * Math.sin(rad);
 
     mark.style.left = `${x}px`;
-    mark.style.top = `${y-10}px`;
+    mark.style.top = `${y-8}px`;
     mark.style.transform = `rotate(${i}deg) translate(-50%, -100%)`;
 
     compassFace.appendChild(mark);
 }
 
-// Update compass face rotation
-function updateCompass(heading){
-    compassFace.style.transform = `rotate(${-heading}deg)`;
-    headingText.textContent = `Heading: ${Math.round((heading + 360) % 360)}°`;
+let currentRotation = 0;
+
+function updateCompass(targetHeading){
+    // Normalize to 0–360
+    targetHeading = (targetHeading + 360) % 360;
+
+    // Compute shortest angular difference
+    let delta = targetHeading - currentRotation;
+
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+
+    currentRotation += delta;
+    console.log(currentRotation)
+    compassFace.style.transform = `rotate(${currentRotation}deg)`;
+
+    headingText.textContent = `Heading: ${Math.round(targetHeading)}°`;
 }
 
 
-function updateHeadingFromGyro(gz) {
-    const now = Date.now();
-    const dt = (now - lastTime) / 1000; // seconds
-    lastTime = now;
-
-    // gz is in °/s
-    heading += gz * dt;
-
-    // No modulo: allow continuous rotation
-    // heading = (heading + 360) % 360;
-
-    updateCompass(heading);
-}
 
 
-setInterval(()=>{
-    const gz = parseFloat(document.getElementById('gz').textContent);
-    updateHeadingFromGyro(gz);
-}, 100);
+
+
+// setInterval(()=>{
+//     const gz = parseFloat(document.getElementById('gz').textContent);
+//     heading = parseFloat(document.getElementById('heading').textContent);
+//     updateCompass(heading);
+// }, 100);
+
+
+
+
+
+
+// setInterval(()=>{
+//     const gz = parseFloat(document.getElementById('gz').textContent);
+//     const headingValue = parseFloat(document.getElementById('headingValue').textContent);
+//     updateCompass(headingValue);
+// }, 100);

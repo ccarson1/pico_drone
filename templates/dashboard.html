@@ -80,7 +80,7 @@
                     <div class="label" style="padding-right: .8em;">Battery Level</div>
                     <div class="value" id="battery">--%</div>
                 </div>
-                <div class="panel status" id="level">Board status: —</div>
+
             </div>
             <video id="droneStream" width="100%" height="480" style="background-color: rgb(34, 48, 64);" autoplay muted
                 playsinline>
@@ -105,40 +105,57 @@
                         <div>X: <span class="value" id="ax">0.000</span></div>
                         <div>Y: <span class="value" id="ay">0.000</span></div>
                         <div>Z: <span class="value" id="az">0.000</span></div>
-                    </div>
 
+                    </div>
                     <div class="column">
                         <div class="label">Gyroscope (°/s)</div>
                         <div>X: <span class="value" id="gx">0.000</span></div>
                         <div>Y: <span class="value" id="gy">0.000</span></div>
                         <div>Z: <span class="value" id="gz">0.000</span></div>
                     </div>
-
-                </div>
-
-                <div class="panel">
-                    <div class="attitude-indicator">
-                        <div class="horizon" id="horizon">
-                            <div class="sky"></div>
-                            <div class="ground"></div>
-                        </div>
-                        <div class="fixed-overlay">
-                            <div class="aircraft-line"></div>
-                            <div class="center-dot"></div>
-                        </div>
+                    <div>
+                        <button id="calibrateBtn" disabled>Calibrate</button>
                     </div>
+
                 </div>
+
                 <div class="panel">
-                    <div class="compass-container">
+                    <div class="panel-container">
+                        <div class=" attitude-indicator">
+                            <div class="horizon" id="horizon">
+                                <div class="sky"></div>
+                                <div class="ground"></div>
+                                <div id="pitch-lines"></div>
+                            </div>
+                            <div class="fixed-overlay">
+                                <div class="aircraft-line"></div>
+                                <div class="center-dot"></div>
+                            </div>
+                        </div>
+                        <div class="status" id="level">Board status: —</div>
+                    </div>
+
+                    
+                    <div class="panel-container compass-container">
                         <div class="compass">
                             <div class="compass-face" id="compassFace"></div>
                             <div class="needle"></div>
                             <div class="compass-center"></div>
                         </div>
-                        <p id="heading">Heading: 0°</p>
+                        <p class="status" id="heading">Heading: 0°</p>
                     </div>
                 </div>
-                
+
+                <div class="panel panel-altimeter">
+                    <div class="panel-container altimeter-gauge">
+                        <div class="altimeter-needle" id="altimeter-needle"></div>
+                        <div class="altimeter-scale">
+                            <!-- optional tick marks -->
+                        </div>
+                        <div class="altimeter-value" id="altimeter-value">0 mm</div>
+                    </div>
+                </div>
+
                 <div class="panel">
                     <input type="range" min="0" max="100" value="0" class="slider" id="accel">
                     <div id="accel-val">0</div>
