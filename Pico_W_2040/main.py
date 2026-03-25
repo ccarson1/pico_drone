@@ -10,6 +10,10 @@ import time
 import ujson
 import math
 from libs.vl53l0x import VL53L0X
+from log_collector import LogCollector
+
+
+log_collector = LogCollector()
 
 def read_scaled(self):
     x, y, z = self.read()
@@ -82,33 +86,10 @@ def tilt_compensated_heading(mx, my, mz, pitch, roll):
 
     except Exception as e:
         print("Heading calc error:", e)
+        log_collector.add_log(f"Heading calc error: {str(e)}")
         return 0
     
 
-
-def update_gy271_calibration(self, mx, my, mz):
-    """Call this each loop iteration while calibrating."""
-    if not getattr(self, "calibrating", False):
-        return
-
-    # Update min/max values
-    self.min_x = min(self.min_x, mx)
-    self.max_x = max(self.max_x, mx)
-    self.min_y = min(self.min_y, my)
-    self.max_y = max(self.max_y, my)
-    self.min_z = min(self.min_z, mz)
-    self.max_z = max(self.max_z, mz)
-
-    # Compute offsets
-    self.offset_x = compute_offsets(self.min_x, self.max_x)
-    self.offset_y = compute_offsets(self.min_y, self.max_y)
-    self.offset_z = compute_offsets(self.min_z, self.max_z)
-
-    # Optional: stop calibration after 20 seconds
-    if time.time() - getattr(self, "calibration_start_time", 0) > 20:
-        self.calibrating = False
-        print("Calibration complete!")
-        print(f"Offsets: X={self.offset_x}, Y={self.offset_y}, Z={self.offset_z}")
 
 def fuse_heading(self, mx, my, mz, pitch, roll, gz):
     now = time.ticks_ms()
@@ -291,10 +272,6 @@ class GY271Sensor:
         x = int.from_bytes(data[0:2], 'little', True)
         y = int.from_bytes(data[2:4], 'little', True)
         z = int.from_bytes(data[4:6], 'little', True)
-
-        # --- FIX: handle overflow / wrap ---
-        if z > 32767:
-            z -= 65536
         return x, y, z
         
 # ────────────── BLE Peripheral ──────────────
@@ -333,6 +310,7 @@ class BLEPeripheral:
             if self.drone:
                 self.drone.start_calibration()
                 print("Calibration triggered via single byte!")
+                log_collector.add_log("Calibration triggered via single byte!")
             return
         if len(data) == 1:
             wheel_value = data[0]
@@ -350,13 +328,26 @@ class BLEPeripheral:
                     if self.drone:
                         self.drone.start_calibration()
                         print("Calibration triggered via BLE!")
+                        log_collector.add_log("Calibration triggered via BLE!")
                 print(f"Key command: {key} = {state}")
+                
             except Exception as e:
                 print("Failed to parse control payload:", e)
 
 # ────────────── Main PicoDrone App ──────────────
 class PicoDrone:
     def __init__(self):
+        #Rest BLE to avoid weird state issues on soft reset
+        ble = bluetooth.BLE()
+        try:
+            ble.active(False)
+            time.sleep(0.5)
+        except:
+            pass
+
+        ble.active(True)
+        time.sleep(0.5)
+
         self.i2c0 = I2C(0, sda=Pin(20), scl=Pin(21), freq=400_000)
         self.motor_controller = MotorController()
         self.battery_monitor = BatteryMonitor()
@@ -408,12 +399,15 @@ class PicoDrone:
         self.ay_offset = 0
         self.az_offset = 0
         
-        print("I2C0:", self.i2c0.scan())
+        devices = self.i2c0.scan()
+        print("I2C0:", devices)
+        log_collector.add_log("I2C0 scan: " + str(devices))
         
     
         
     def start_calibration(self):
         print("Starting magnetometer calibration...")
+        log_collector.add_log("Starting magnetometer calibration...")
         self.calibrating = True
         self.calibration_start_time = time.time()
 
@@ -443,9 +437,11 @@ class PicoDrone:
         if time.time() - self.calibration_start_time > self.calibration_duration:
             self.calibrating = False
             print("Calibration complete:")
+            log_collector.add_log("Calibration complete:")
             print(f"X: {self.min_x}-{self.max_x}")
             print(f"Y: {self.min_y}-{self.max_y}")
             print(f"Z: {self.min_z}-{self.max_z}")
+
 
     def update_mpu_calibration(self, ax, ay, az):
         """Call each loop while calibrating to compute accel offsets."""
@@ -468,10 +464,13 @@ class PicoDrone:
 
     async def run(self):
         print("BLE peripheral ready – MPU6050 streaming")
+        log_collector.add_log("BLE peripheral ready – MPU6050 streaming")
         while True:
             voltage = self.battery_monitor.read_voltage()
             percent = self.battery_monitor.percent(voltage)
             print("Battery:", voltage, "V", percent, "%")
+            log_collector.add_log(f"Battery: {voltage} V, {percent}%")
+            print(log_collector.get_logs())
             
             
             try:
@@ -481,6 +480,7 @@ class PicoDrone:
                     services=[BLEPeripheral.SERVICE_UUID],
                 ) as conn:
                     print("Connected! Connection obj:", conn)
+                    log_collector.add_log("Connected! Connection obj: " + str(conn))
                     await asyncio.sleep_ms(1500)
                     asyncio.create_task(self.ble.rx_listener())
 
@@ -498,12 +498,11 @@ class PicoDrone:
                         
                         
                         
-                        # --- FIX: clamp angles ---
-                        pitch = max(-90, min(90, pitch))
-                        roll  = max(-90, min(90, roll))
+                        pitch = self.pitch_filter.update(pitch)
+                        roll = self.roll_filter.update(roll)
                         
 
-                        print("Pitch:", round(pitch,1), "Roll:", round(roll,1))
+                        #print("Pitch:", round(pitch,1), "Roll:", round(roll,1))
                         
                         #Get height distance
                         distance = self.vl53.read()
@@ -511,6 +510,7 @@ class PicoDrone:
                         
                         if self.calibrating:
                             print("Calibrating... Move the drone in all orientations.")
+                            log_collector.add_log("Calibrating... Move the drone in all orientations.")
                             self.update_gy271_calibration(mx, my, mz)
                             self.update_mpu_calibration(ax, ay, az)
 
@@ -518,6 +518,7 @@ class PicoDrone:
                             self.max_x - self.min_x,
                             self.max_y - self.min_y,
                             self.max_z - self.min_z)
+                            #log_collector.add_log(f"Mag range: X={self.max_x - self.min_x}, Y={self.max_y - self.min_y}, Z={self.max_z - self.min_z}")
 
                         #print("X:", self.min_x, self.max_x)
                         #print("Y:", self.min_y, self.max_y)
@@ -530,48 +531,62 @@ class PicoDrone:
 
                         mx -= offset_x
                         my -= offset_y
-                        #mz -= offset_z
+                        mz -= offset_z
                         
-                        # scale_x = compute_scale(self.min_x, self.max_x)
-                        # scale_y = compute_scale(self.min_y, self.max_y)
-                        # scale_z = compute_scale(self.min_z, self.max_z)
+                        scale_x = compute_scale(self.min_x, self.max_x)
+                        scale_y = compute_scale(self.min_y, self.max_y)
+                        scale_z = compute_scale(self.min_z, self.max_z)
 
-                        # avg_scale = (scale_x + scale_y + scale_z) / 3
-        
+                        avg_scale = (scale_x + scale_y + scale_z) / 3
 
-                        # if scale_x != 0:
-                        #     mx = mx * (avg_scale / scale_x)
+                        if scale_x != 0:
+                            mx = mx * (avg_scale / scale_x)
 
-                        # if scale_y != 0:
-                        #     my = my * (avg_scale / scale_y)
+                        if scale_y != 0:
+                            my = my * (avg_scale / scale_y)
 
-                        # if scale_z != 0:
-                        #     mz = mz * (avg_scale / scale_z)
+                        if scale_z != 0:
+                            mz = mz * (avg_scale / scale_z)
                         
                         mx = self.mx_filter.update(mx)
                         my = self.my_filter.update(my)
-                        #mz = self.mz_filter.update(mz)
+                        mz = self.mz_filter.update(mz)
                         
-                        heading = get_heading(mx, my)
-                        #heading = fuse_heading(self, mx, my, mz, pitch, roll, gz)
+                        #heading = get_heading(mx, my)
+                        heading = fuse_heading(self, mx, my, mz, pitch, roll, gz)
                         
                         direction = get_cardinal_direction(heading)
-                        print("Heading:", round(heading,1), "Direction:", direction)
-                        
+                        #print("Heading:", round(heading,1), "Direction:", direction)
+                        # Gather logs
+                        logs_to_send = log_collector.get_logs()
+                        log_str = " | ".join(logs_to_send) if logs_to_send else ""
+
+                        # Pack logs into fixed-size bytes
+                        LOG_SIZE = 64
+                        log_bytes = log_str.encode("utf-8")[:LOG_SIZE]
+                        log_bytes += b'\x00' * (LOG_SIZE - len(log_bytes))
+
+                        battery_percent = min(100, max(0, int(percent)))
+                        m1 = min(255, max(0, int(self.motor_controller.state["motor1"])))
+                        m2 = min(255, max(0, int(self.motor_controller.state["motor2"])))
+                        m3 = min(255, max(0, int(self.motor_controller.state["motor3"])))
+                        m4 = min(255, max(0, int(self.motor_controller.state["motor4"])))
+
                         data = struct.pack(
-                            "8fB4B",
+                            "8fB4B64s",
                             ax, ay, az,
                             gx, gy, gz,
                             heading,
                             distance,
-                            self.battery_monitor.percent(),
-                            self.motor_controller.state["motor1"],
-                            self.motor_controller.state["motor2"],
-                            self.motor_controller.state["motor3"],
-                            self.motor_controller.state["motor4"]
+                            battery_percent,
+                            m1, m2, m3, m4,
+                            log_bytes
                         )
 
-                        for _ in range(3):
+                        # Clear logs after sending
+                        log_collector.clear_logs()
+
+                        for _ in range(1):
                             try:
                                 await self.ble.tx_char.notify(conn, data)
                                 break
@@ -584,15 +599,13 @@ class PicoDrone:
 
             except Exception as e:
                 print("Advertise/conn error:", str(e))
+                log_collector.add_log(f"Advertise/conn error: {str(e)}")
                 await asyncio.sleep(1)
 
 
 if __name__ == "__main__":
     drone = PicoDrone()
     asyncio.run(drone.run())
-
-
-
 
 
 

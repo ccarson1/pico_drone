@@ -1,12 +1,14 @@
-const display = document.getElementById("keyDisplay");
 
 const socket = new WebSocket("ws://localhost:8000/controls");
+let previousAction = "None";
 
 socket.onopen = () => {
+    addLog("Connected to control server");
     console.log("Connected to control server");
 };
 
 socket.onclose = () => {
+    addLog("Disconnected from control server");
     console.log("Disconnected from control server");
 };
 
@@ -64,6 +66,7 @@ Input.init();
 function update() {
 
     let action = "None";
+    
 
     if (Input.isDown("w")) action = "Move forward";
     if (Input.isDown("s")) action = "Move backward";
@@ -78,8 +81,11 @@ function update() {
     if (Input.isDown("ArrowLeft")) action = "Tilt left";
     if (Input.isDown("ArrowRight")) action = "Tilt right";
 
-    display.textContent = action;
-
+    
+    if (action !== "None" && action !== previousAction) {
+         addLog("Current action: " + action);
+    }
+    previousAction = action;
     requestAnimationFrame(update);
 }
 

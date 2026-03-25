@@ -83,13 +83,22 @@ async def connect_to_pico():
 
 
                     # ---------- Handle normal sensor packet ----------
-                    if len(data) != 37:
-                        print(f"[BLE] Unexpected data length: {len(data)} bytes")
+                    FORMAT = "8fB4B64s"
+                    SIZE = struct.calcsize(FORMAT)
+                    if len(data) != SIZE:
+                        print(f"[BLE] Unexpected size: {len(data)}")
                         return
 
                     try:
-                        ax, ay, az, gx, gy, gz, heading, distance, battery, m1, m2, m3, m4 = struct.unpack("8fB4B", data)
+                        unpacked = struct.unpack(FORMAT, data)
+                        ax, ay, az, gx, gy, gz, heading, distance, battery, m1, m2, m3, m4, log_bytes = unpacked
+                        
+                        log_message = log_bytes.decode("utf-8").rstrip('\x00')
+                        #print(log_message)
                         timestamp = time.strftime("%H:%M:%S")
+
+                        if log_message:
+                            log_message = f"[DRONE {timestamp}] {log_message}"
 
                         reading = {
                             "timestamp": timestamp,
@@ -103,12 +112,16 @@ async def connect_to_pico():
                                 "motor2": m2,
                                 "motor3": m3,
                                 "motor4": m4,
-                            }
+                            },
+                            "log": log_message
                         }
 
                         #print(f"[BLE] Battery: {battery}%")
-                        print("Heading:", round(heading,1))
-                        print("Distance:", distance, "mm")
+                        #print("Heading:", round(heading,1))
+                        #print("Distance:", distance, "mm")
+                        if log_message:
+
+                            print(f"[DRONE {timestamp}] {log_message}")
 
                         latest_reading = reading
                         data_history.append(reading)

@@ -15,6 +15,18 @@ let roll = 0;
 let droneConnected = false;
 
 
+// Example function to add logs
+function addLog(message) {
+    const container = document.getElementById('logContainer');
+    const logLine = document.createElement('div');
+    logLine.textContent = message;
+
+    container.appendChild(logLine);
+
+    // Auto-scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
 function updateHorizon(pitchDeg, rollDeg) {
     const horizon = document.getElementById("horizon");
     horizon.style.transform = `rotate(${rollDeg}deg)`;
@@ -52,6 +64,7 @@ function connectWebSocket() {
         document.getElementById("heading").textContent = data.heading.toFixed(1) + "°";
         document.getElementById("battery").textContent = data.battery + "%";
         document.getElementById("altimeter-value").textContent = data.distance + " mm";
+        addLog(data.log);
         //console.log("Received data:", data);
 
         updateAltimeter(data.distance - 75);
@@ -249,3 +262,22 @@ function updateAltimeter(distanceMm) {
     needle.style.transform = `translateX(-50%) rotate(${angle-100}deg)`;
     valueDisplay.textContent = `${distanceMm.toFixed(0)} mm`;
 }
+
+
+// Middle column
+function showTab(tab) {
+    document.getElementById('videoTab').classList.remove('active');
+    document.getElementById('logsTab').classList.remove('active');
+
+    if (tab === 'video') {
+        document.getElementById('videoTab').classList.add('active');
+    } else {
+        document.getElementById('logsTab').classList.add('active');
+    }
+}
+
+function clearLogs() {
+    const container = document.getElementById('logContainer');
+    container.innerHTML = '';
+}
+

@@ -326,3 +326,36 @@ button:disabled {
     color: #fff;
     font-size: 14px;
 }
+
+/* Middle column */
+.tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 10px;
+}
+
+.tabs button {
+    padding: 1%;
+    cursor: pointer;
+}
+
+/* Hide inactive tabs */
+.tab-content {
+    display: none;
+}
+
+/* Show active tab */
+.tab-content.active {
+    display: block;
+}
+
+/* Scrollable logs */
+#logContainer {
+    height: 480px;              /* same height as video */
+    overflow-y: auto;
+    background: #111;
+    color: #0f0;
+    font-family: monospace;
+    padding: 10px;
+    border-radius: 5px;
+}
